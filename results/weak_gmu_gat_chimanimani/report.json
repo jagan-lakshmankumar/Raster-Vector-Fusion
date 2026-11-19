@@ -1,0 +1,20 @@
+{
+  "weak_supervision": true,
+  "label_definition": "landslide-exposed road segment within 500 m of ground-truth landslide",
+  "best_validation": {
+    "threshold": 0.4600000000000001,
+    "precision": 0.6382978723404256,
+    "recall": 0.9473684210526315,
+    "f1": 0.7627118644067796,
+    "iou": 0.6164383561643836,
+    "tp": 90,
+    "fp": 51,
+    "fn": 5
+  },
+ 
+  "mean_raster_gate": 0.5152250528335571,
+  "epochs_selected": 31
+}
+
+
+

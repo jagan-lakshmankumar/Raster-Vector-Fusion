@@ -1,0 +1,16 @@
+{
+  "event": "chimanimani_full_post_event_2019-03_local-buffer",
+  "input_edges": "D:\\BTP\\drcarys-0211\\FINAL\\results\\chimanimani_study_graph_pre_event\\road_edges.geojson",
+  "landslide_probability": "results\\chimanimani_full_post_event_coverage\\chimanimani_landslide_probability_mosaic.tif",
+  "threshold": 0.81,
+  "segment_length_m": 50.0,
+  "hazard_buffer_m": 500.0,
+  "total_directed_edges": 32740,
+  "edges_checked_inside_raster": 32740,
+  "edges_assumed_safe_outside_raster": 0,
+  "directly_hazardous_10m_subsegments": 233,
+  "original_roads_with_at_least_one_local_danger_piece": 336,
+  "blocked_danger_subsegments": 3218,
+  "safe_edges": 29522,
+  "policy": "Only road pieces intersecting the supplied post-event raster are assessed. A raster hazard receives the configured local buffer; only road pieces inside that buffer are DANGER_DO_NOT_USE. Road pieces outside raster coverage remain SAFE."
+}

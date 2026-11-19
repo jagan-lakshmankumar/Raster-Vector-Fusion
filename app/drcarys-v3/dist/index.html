@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Landslide Safe Routing | Chimanimani</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    :root { --ink:#172218; --muted:#667269; --paper:#f5f7f3; --panel:#ffffff; --safe:#2d7d46; --danger:#cf3f35; --hazard:#f59e0b; --route:#1769aa; --line:#dbe1da; }
+    * { box-sizing:border-box; } body { margin:0; font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:var(--paper); }
+    header { height:84px; padding:0 28px; background:#173d2b; color:#fff; display:grid; grid-template-columns:1fr minmax(360px,2fr) 1fr; align-items:center; gap:18px; }
+    .brand { display:flex; align-items:center; gap:12px; } .mark { width:34px; height:34px; border-radius:50%; background:#9bd36a; color:#173d2b; display:grid; place-items:center; font-weight:800; }
+    h1 { margin:0; font-size:18px; letter-spacing:.01em; } .subtitle { margin-top:3px; font-size:12px; color:#c9dbc8; } .project-title { text-align:center; font-size:13px; font-weight:650; line-height:1.3; color:#eff7e9; } .event { justify-self:end; font-size:12px; padding:7px 10px; border:1px solid #6c947a; border-radius:999px; color:#e6f1e7; white-space:nowrap; }
+    main { display:grid; grid-template-columns:340px minmax(0,1fr); height:calc(100vh - 72px); min-height:600px; }
+    aside { padding:20px; overflow:auto; background:var(--panel); border-right:1px solid var(--line); }
+    h2 { margin:0 0 7px; font-size:17px; } h3 { margin:20px 0 9px; font-size:13px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); }
+    p { margin:0; line-height:1.45; font-size:13px; color:var(--muted); }.instruction { padding:12px; border-left:3px solid var(--safe); background:#f1f7f1; font-size:13px; line-height:1.45; }
+    .button-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0 9px; } button { appearance:none; font:inherit; cursor:pointer; border-radius:7px; border:1px solid #b9c6ba; background:#fff; color:var(--ink); padding:10px; font-size:13px; font-weight:650; } button:hover { border-color:#397251; } button.active { background:#e3f0e5; border-color:var(--safe); color:#174a29; } button.primary { width:100%; border-color:#1d6337; background:var(--safe); color:#fff; margin-top:10px; } button.secondary { width:100%; margin-top:8px; }
+    .place { margin-top:8px; padding:10px; border:1px solid var(--line); border-radius:7px; font-size:12px; background:#fbfcfa; } .place strong { display:block; color:var(--ink); margin-bottom:3px; }.status { margin-top:14px; padding:12px; border-radius:7px; font-size:13px; line-height:1.4; background:#edf4ee; color:#245435; }.status.warning { background:#fff3e6; color:#8a4a00; }.status.error { background:#fdebea; color:#9d2521; }
+    .legend { display:grid; gap:8px; font-size:12px; }.legend span { display:flex; align-items:center; gap:8px; }.swatch { width:18px; height:5px; border-radius:4px; display:inline-block; }.dot { width:12px; height:12px; border-radius:50%; display:inline-block; }.footnote { margin-top:22px; font-size:11px; }
+    #map { width:100%; height:100%; background:#e9efe8; }.leaflet-control-attribution { font-size:10px!important; }
+    .map-label { background:#fff; border:1px solid #bac5b9; border-radius:5px; color:#172218; box-shadow:none; padding:3px 5px; font-size:11px; }.map-label:before { border:0; }
+    @media (max-width:760px) { header { height:auto; min-height:72px; padding:12px 16px; grid-template-columns:1fr; } .project-title { display:none; } .event { justify-self:start; } main { grid-template-columns:1fr; grid-template-rows:auto 62vh; height:auto; } aside { border-right:0; border-bottom:1px solid var(--line); } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><div class="mark">DR</div><div><h1>DR-Carys</h1><div class="subtitle">V3 · GMU + GAT routing assistant</div></div></div>
+    <div class="project-title">Structure-Aware Raster–Vector Fusion for<br>Post-Landslide Road Assessment and Safety Routing</div>
+    <div class="event">Study area: Chimanimani · Post-event, March 2019</div>
+  </header>
+  <main>
+    <aside>
+      <h2>Post-event safe routing</h2>
+      <p>Upload one or more post-event rasters. Their predicted landslides and vector-road attributes are fused by V3 before safety-only routing.</p>
+      <h3>1 · Raster inputs</h3>
+      <label class="place" style="display:block"><strong>GMU + GAT demonstration scenes — multi-select</strong><select id="sceneSelect" multiple size="7" style="width:100%;margin-top:7px"></select></label>
+      <label class="place" style="display:block;margin-top:8px"><strong>Or match uploaded files to these demonstration scenes</strong><input id="rasterUpload" type="file" multiple accept=".nc,.tif,.tiff" style="width:100%;margin-top:7px;font-size:12px"></label>
+      <button id="applyScenesButton" class="secondary">Run selected scenes with GMU + GAT</button>
+      <div id="sceneSummary" class="status">Select up to eight V3 demonstration scenes or use the live upload below. All pre-event roads are currently shown as safe.</div>
+      <div id="scenePreviews" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+      <h3>Live V3 upload and inference</h3>
+      <label class="place" style="display:block"><strong>Upload temporal scene(s) or probability raster(s)</strong><input id="liveRasterUpload" type="file" multiple accept=".nc,.tif,.tiff" style="width:100%;margin-top:7px;font-size:12px"></label>
+      <button id="liveAnalyzeButton" class="secondary">Run GMU + GAT fusion and update graph</button>
+      <p style="margin-top:7px;font-size:11px"><code>.nc</code> runs the frozen temporal landslide model; its probability map and local vector-road features then run through weakly supervised GMU + GAT. GeoTIFF input must be a georeferenced probability raster (0–1).</p>
+      <h3>2 · Select locations</h3>
+      <div class="instruction" id="instruction">Choose <b>Set start</b>, then click a road location on the map.</div>
+      <div class="button-row"><button id="startButton" class="active">Set start</button><button id="destinationButton">Set destination</button></div>
+      <div class="place"><strong>Start</strong><span id="startValue">Not selected</span></div>
+      <div class="place"><strong>Destination</strong><span id="destinationValue">Not selected</span></div>
+      <button id="routeButton" class="primary">Find safest route</button>
+      <button id="clearButton" class="secondary">Clear selection</button>
+      <div class="status" id="routeStatus">Map data is loading…</div>
+      <h3>Map layers</h3>
+      <div class="legend">
+        <span><i class="swatch" style="background:#2d7d46"></i>Safe road — eligible for routing</span>
+        <span><i class="swatch" style="background:#cf3f35"></i>Danger road — retained but excluded</span>
+        <span><i class="swatch" style="background:#5b167f;height:12px;opacity:.75"></i>Predicted landslide area</span>
+        <span><i class="swatch" style="background:#1769aa"></i>Returned safety-only route</span>
+        <span><i class="dot" style="background:#2d7d46"></i>Start <i class="dot" style="background:#7b3294"></i>Destination</span>
+      </div>
+      <p class="footnote">V3 safety policy: GMU + GAT can classify danger only inside the 500 m buffer of a thresholded raster landslide prediction. Only the affected 50 m road piece is excluded; the orange overlay is the supporting raster evidence.</p>
+    </aside>
+    <div id="map" aria-label="Chimanimani landslide and safe-road map"></div>
+  </main>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="data/dashboard_data.js"></script>
+  <script src="data/demo_scenes.js"></script>
+  <script>
+    const map = L.map('map', { zoomControl: true, preferCanvas: true }).setView([-19.78, 32.86], 10);
+    // The project layers are fully local.  Avoid a third-party basemap so the
+    // dashboard stays usable where external tile requests are blocked.
+    const localMapLabel = L.control({ position: 'bottomright' });
+    localMapLabel.onAdd = function () { const label = L.DomUtil.create('div', 'map-label'); label.textContent = 'Local project map · WGS 84'; return label; };
+    localMapLabel.addTo(map);
+    const state = { mode: 'start', start: null, destination: null, graph: null, routeLayer: null, markers: [], activeBlocked: new Set(), hazardLayer: null, dangerLayer: null };
+    const $ = (id) => document.getElementById(id);
+    function setStatus(message, type = '') { $('routeStatus').className = `status ${type}`; $('routeStatus').textContent = message; }
+    function formatPoint(point) { return `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`; }
+    function setMode(mode) { state.mode = mode; $('startButton').classList.toggle('active', mode === 'start'); $('destinationButton').classList.toggle('active', mode === 'destination'); $('instruction').innerHTML = mode === 'start' ? 'Click a road location to set the <b>start</b>.' : 'Click a road location to set the <b>destination</b>.'; }
+    function closestNode(latlng) { let best = null, bestDistance = Infinity; for (const [id, coordinate] of Object.entries(state.graph.nodes)) { const distance = (coordinate[0] - latlng.lng) ** 2 + (coordinate[1] - latlng.lat) ** 2; if (distance < bestDistance) { best = { id, coordinate }; bestDistance = distance; } } return best; }
+    function setPoint(kind, latlng) { const node = closestNode(latlng); const point = { node: node.id, lat: node.coordinate[1], lng: node.coordinate[0] }; state[kind] = point; $('startValue').textContent = state.start ? formatPoint(state.start) : 'Not selected'; $('destinationValue').textContent = state.destination ? formatPoint(state.destination) : 'Not selected'; state.markers.filter(marker => marker.options.kind === kind).forEach(marker => map.removeLayer(marker)); const color = kind === 'start' ? '#2d7d46' : '#7b3294'; const marker = L.circleMarker([point.lat, point.lng], { kind, radius: 7, color: '#fff', weight: 2, fillColor: color, fillOpacity: 1 }).addTo(map).bindTooltip(kind === 'start' ? 'Start' : 'Destination', { permanent: true, direction: 'top', className: 'map-label' }); state.markers.push(marker); setStatus(`${kind === 'start' ? 'Start' : 'Destination'} snapped to the road graph. ${kind === 'start' ? 'Now choose a destination.' : 'Ready to find a safety-only route.'}`); if (kind === 'start') setMode('destination'); }
+    function shortestSafePath(source, target) { const adjacency = new Map(); state.graph.edges.filter(edge => !state.activeBlocked.has(edge.id)).forEach(edge => { if (!adjacency.has(edge.u)) adjacency.set(edge.u, []); adjacency.get(edge.u).push(edge); }); const distance = new Map([[source, 0]]), previous = new Map(), queue = [{ id: source, cost: 0 }]; const push = item => { queue.push(item); for (let child = queue.length - 1; child > 0;) { const parent = Math.floor((child - 1) / 2); if (queue[parent].cost <= queue[child].cost) break; [queue[parent], queue[child]] = [queue[child], queue[parent]]; child = parent; } }; const pop = () => { const first = queue[0], last = queue.pop(); if (queue.length) { queue[0] = last; for (let parent = 0;;) { let smallest = parent, left = parent * 2 + 1, right = left + 1; if (left < queue.length && queue[left].cost < queue[smallest].cost) smallest = left; if (right < queue.length && queue[right].cost < queue[smallest].cost) smallest = right; if (smallest === parent) break; [queue[parent], queue[smallest]] = [queue[smallest], queue[parent]]; parent = smallest; } } return first; }; while (queue.length) { const current = pop(); if (current.cost !== distance.get(current.id)) continue; if (current.id === target) break; for (const edge of (adjacency.get(current.id) || [])) { const next = current.cost + edge.length_m; if (next < (distance.get(edge.v) ?? Infinity)) { distance.set(edge.v, next); previous.set(edge.v, edge); push({ id: edge.v, cost: next }); } } } if (!previous.has(target) && source !== target) return null; const path = []; for (let node = target; node !== source;) { const edge = previous.get(node); path.unshift(edge); node = edge.u; } return { edges: path, length: distance.get(target) || 0 }; }
+    function drawRoute(route) { if (state.routeLayer) map.removeLayer(state.routeLayer); const coordinates = route.edges.map(edge => edge.coordinates.map(([lng, lat]) => [lat, lng])); state.routeLayer = L.polyline(coordinates, { color: '#1769aa', weight: 5, opacity: .95 }).addTo(map); map.fitBounds(state.routeLayer.getBounds(), { padding: [35, 35] }); }
+    map.on('click', event => { if (!state.graph) return; setPoint(state.mode, event.latlng); });
+    $('startButton').onclick = () => setMode('start'); $('destinationButton').onclick = () => setMode('destination');
+    function applyEventUpdate(edgeIds, hazards, summary, previews = '') { if (!state.graph) return setStatus('Map data is still loading. Please try again in a moment.', 'warning'); state.activeBlocked = new Set(edgeIds); if (state.hazardLayer) map.removeLayer(state.hazardLayer); if (state.dangerLayer) map.removeLayer(state.dangerLayer); state.hazardLayer = L.geoJSON(hazards, { style: { color: '#4a0f65', weight: 1, fillColor: '#5b167f', fillOpacity: .68 }, interactive: false }).addTo(map); const dangerLines = state.graph.edges.filter(edge => state.activeBlocked.has(edge.id) && edge.id.includes('_0_s')).map(edge => edge.coordinates.map(([lng, lat]) => [lat, lng])); state.dangerLayer = L.polyline(dangerLines, { color: '#cf3f35', weight: 3, opacity: .95 }).addTo(map); $('sceneSummary').textContent = summary; $('scenePreviews').innerHTML = previews; if (state.routeLayer) { map.removeLayer(state.routeLayer); state.routeLayer = null; } setStatus(edgeIds.length ? 'GMU + GAT graph update completed. Select start and destination.' : 'GMU + GAT processing finished. No local road piece was classified as danger.'); }
+    async function updateFromSelectedScenes() { const selectedIds = [...$('sceneSelect').selectedOptions].map(option => option.value); if (!selectedIds.length) return setStatus('Select at least one demonstration scene first.', 'warning'); $('applyScenesButton').disabled = true; setStatus(`Running GMU + GAT for ${selectedIds.length} selected demonstration scene(s)…`); try { const response = await fetch('/api/analyze-demo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scene_ids: selectedIds }) }); const result = await response.json(); if (!response.ok) throw new Error(result.error || 'GMU + GAT demonstration failed'); const previews = selectedIds.map(id => `<img src="data/previews/${id}.png" alt="Predicted landslide probability for scene ${id}" style="width:68px;height:68px;object-fit:cover;border:1px solid #dbe1da;border-radius:5px">`).join(''); applyEventUpdate(result.blocked_edge_ids, result.hazards, `${result.scenes.length} selected scene(s) processed by GMU + GAT: ${result.blocked_edge_ids.length / 2} local road pieces classified danger at risk threshold ${Number(result.risk_threshold).toFixed(2)}.`, previews); } catch (error) { setStatus(error.message, 'error'); } finally { $('applyScenesButton').disabled = false; } }
+    $('applyScenesButton').onclick = updateFromSelectedScenes;
+    $('rasterUpload').onchange = event => { const ids = [...event.target.files].map(file => (window.DEMO_SCENES || []).find(scene => new RegExp(`(?:_|^)${scene.id}(?:\\.|_|$)`).test(file.name))?.id).filter(Boolean); if (!ids.length) { $('sceneSummary').textContent = 'Choose matching Chimanimani demonstration scenes from the list, or use the live V3 upload below.'; return; } [...$('sceneSelect').options].forEach(option => { option.selected = ids.includes(option.value); }); updateFromSelectedScenes(); };
+    $('liveAnalyzeButton').onclick = async () => { const files = $('liveRasterUpload').files; if (!files.length) return setStatus('Choose one or more .nc or probability GeoTIFF files first.', 'warning'); const body = new FormData(); [...files].forEach(file => body.append('rasters', file)); $('liveAnalyzeButton').disabled = true; setStatus(`Running temporal inference and GMU + GAT fusion for ${files.length} uploaded raster scene(s)…`); try { const response = await fetch('/api/analyze', { method: 'POST', body }); const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Raster analysis failed'); const labels = result.scenes.map(scene => `${scene.name} (${scene.source === 'temporal_model_inference' ? 'temporal-model inference' : 'probability raster'})`).join(', '); const threshold = Number(result.risk_threshold).toFixed(2); applyEventUpdate(result.blocked_edge_ids, result.hazards, `${result.scenes.length} uploaded scene(s) processed by weak GMU + GAT: ${result.blocked_edge_ids.length / 2} local road pieces classified danger at risk threshold ${threshold}. ${labels}`); } catch (error) { setStatus(error.message, 'error'); } finally { $('liveAnalyzeButton').disabled = false; } };
+    $('clearButton').onclick = () => { state.start = state.destination = null; state.markers.forEach(marker => map.removeLayer(marker)); state.markers = []; if (state.routeLayer) map.removeLayer(state.routeLayer); state.routeLayer = null; $('startValue').textContent = $('destinationValue').textContent = 'Not selected'; setMode('start'); setStatus('Selection cleared. Choose a new start location.'); };
+    $('routeButton').onclick = () => { if (!state.start || !state.destination) return setStatus('Select both a start and a destination first.', 'warning'); const route = shortestSafePath(state.start.node, state.destination.node); if (!route) return setStatus('No safe route is available between these locations. Danger roads remain visible but are never used.', 'error'); drawRoute(route); setStatus(`Safe route found: ${(route.length / 1000).toFixed(2)} km. It contains zero danger-road edges.`); };
+    const dataPromise = window.DASHBOARD_DATA ? Promise.resolve([window.DASHBOARD_DATA.roads, window.DASHBOARD_DATA.graph]) : Promise.all([fetch('data/roads.geojson').then(r => r.json()), fetch('data/routing_graph.json').then(r => r.json())]);
+    dataPromise.then(([roads, graph]) => { state.graph = graph; $('sceneSelect').innerHTML = (window.DEMO_SCENES || []).map(scene => `<option value="${scene.id}">Scene ${scene.id}</option>`).join(''); const roadsLayer = L.geoJSON(roads, { style: { color: '#2d7d46', weight: 1.2, opacity: .9 }, onEachFeature: (feature, layer) => layer.bindTooltip(`SAFE pre-event road<br>${Math.round(feature.properties.length_m)} m`) }).addTo(map); L.control.layers(null, { 'Pre-event road network': roadsLayer }, { collapsed: false }).addTo(map); map.fitBounds(roadsLayer.getBounds(), { padding: [18, 18] }); setStatus('Choose one or more demo post-event rasters, then run GMU + GAT fusion.'); }).catch(error => setStatus(`Could not load map data: ${error.message}`, 'error'));
+  </script>
+</body>
+</html>

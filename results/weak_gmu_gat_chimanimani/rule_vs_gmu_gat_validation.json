@@ -1,0 +1,30 @@
+{
+  "evaluation_split": "internal_val",
+  "label_definition": "weak landslide exposure within 500 m of a ground-truth landslide mask",
+  "sample_count": 187,
+  "current_rule_metrics": {
+    "threshold": 0.5,
+    "precision": 0.6129032258064516,
+    "recall": 0.2,
+    "f1": 0.30158730158730157,
+    "iou": 0.17757009345794392,
+    "tp": 19,
+    "fp": 12,
+    "fn": 76
+  },
+  "weak_gmu_gat_metrics": {
+    "threshold": 0.4600000000000001,
+    "precision": 0.6382978723404256,
+    "recall": 0.9473684210526315,
+    "f1": 0.7627118644067796,
+    "iou": 0.6164383561643836,
+    "tp": 90,
+    "fp": 51,
+    "fn": 5
+  },
+  "gmu_threshold": 0.4600000000000001,
+  "mean_raster_gate": 0.5148319005966187,
+  "decisions_changed_from_current_rule": 110,
+  "current_rule_danger": 31,
+  "gmu_gat_danger": 141
+}

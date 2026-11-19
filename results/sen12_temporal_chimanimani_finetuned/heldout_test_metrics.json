@@ -1,0 +1,22 @@
+{
+  "checkpoint": "results\\sen12_temporal_chimanimani_finetuned\\best.pt",
+  "checkpoint_epoch": 12,
+  "region": "chimanimani",
+  "source_split": "test",
+  "sample_count": 30,
+  "sample_seed": null,
+  "metric_role": "held_out_split_evaluation",
+  "threshold": 0.81,
+  "metrics": {
+    "threshold": 0.81,
+    "tp": 1883,
+    "fp": 2319,
+    "fn": 2868,
+    "tn": 484450,
+    "precision": 0.4481199428843408,
+    "recall": 0.39633761313407706,
+    "f1": 0.42064112587959346,
+    "iou": 0.26633663366336635,
+    "accuracy": 0.989447021484375
+  }
+}

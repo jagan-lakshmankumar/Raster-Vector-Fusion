@@ -1,0 +1,28 @@
+# This repository intentionally publishes only source code, application files,
+# and reproducible result artifacts.  Raw and derived datasets stay local.
+dataset/
+.venv/
+
+# Local/editor state and credentials
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.openai/
+
+# Root-level paper drafts and local helpers are not part of the code/results/app release.
+*.docx
+*.pdf
+build_v3_ieee_paper.py
+render_word_pdf.ps1
+start_drcarys_v3.ps1
+colab_train_sentinel2_road.ipynb
+colab notebooks/
+docs/
+others/
+paper_assets/
+paper_render/

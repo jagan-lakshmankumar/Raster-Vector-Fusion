@@ -1,0 +1,7 @@
+{
+  "best_val_iou": 0.3182890855457227,
+  "epochs": 12,
+  "train_patches": 773,
+  "val_patches": 50,
+  "india_excluded": true
+}

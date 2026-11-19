@@ -1,0 +1,7 @@
+{
+  "nodes": "road_nodes.geojson",
+  "edges": "road_edges.geojson",
+  "topology": "road_graph.graphml",
+  "edge_cost": "route_cost",
+  "risk": "risk_score"
+}

@@ -1,0 +1,15 @@
+{
+  "input_edges": "results\\chimanimani_study_graph_v2_local_buffer_update\\road_edges.geojson",
+  "pair_count": 50,
+  "seed": 42,
+  "policy": "Safety-only: DANGER_DO_NOT_USE edges remain visible but are excluded from routing.",
+  "baseline_routes_available": 50,
+  "baseline_routes_using_danger": 42,
+  "safe_routes_available": 10,
+  "safe_routes_unavailable": 40,
+  "safe_routes_with_danger_edges": 0,
+  "mean_baseline_length_m": 49198.94711668548,
+  "mean_safe_length_m": 36210.893566395076,
+  "mean_safe_detour_m_when_both_exist": 1224.0335801905974,
+  "max_safe_detour_m_when_both_exist": 9962.659240786066
+}
