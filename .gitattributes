@@ -1,5 +1,2 @@
-# Keep large, generated geospatial and raster result artifacts out of normal Git blobs.
-results/**/*.tif filter=lfs diff=lfs merge=lfs -text
-results/**/*.tiff filter=lfs diff=lfs merge=lfs -text
-results/**/*.graphml filter=lfs diff=lfs merge=lfs -text
-results/**/*.geojson filter=lfs diff=lfs merge=lfs -text
+# Result artifacts are stored directly in Git.  The largest file is below
+# GitHub's per-file size limit, so cloning works without a Git LFS dependency.
