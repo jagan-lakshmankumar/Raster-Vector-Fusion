@@ -2,8 +2,6 @@
 
 A research prototype for assessing likely post-landslide road exposure and producing safety-only routes. The system combines temporal Sentinel-2 landslide evidence with an OpenStreetMap-derived road graph. Raster and vector evidence are fused at the road-segment level, then topology is used to identify segments that should be excluded from routing.
 
-> **Research use only.** This project identifies modelled landslide exposure, not verified road closures or passability. Outputs require expert review before operational use.
-
 ## What the system does
 
 ```mermaid
