@@ -1,4 +1,4 @@
-# IIIT Sri City — Road Segmentation & Raster-Vector Fusion (Final)
+# Structure-Aware Raster-Vector Routing
 
 End-to-end pipeline that extracts **roads** from three imagery sources
 (Sentinel-2 satellite, DJI drone, Aeroscapes aerial) and fuses the deep-learning
