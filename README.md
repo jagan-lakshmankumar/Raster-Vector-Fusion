@@ -1,169 +1,102 @@
-# Structure-Aware Raster-Vector Routing
+# Structure-Aware Raster-Vector Integration for Post-Landslide Road-Network Assessment and Safety-Routing
 
-End-to-end pipeline that extracts **roads** from three imagery sources
-(Sentinel-2 satellite, DJI drone, Aeroscapes aerial) and fuses the deep-learning
-raster output with **OSM vector** data — including a **graph-attention fusion**
-(GCN + relaxation labeling) for topology-consistent refinement.
+**DR-Carys** is a geospatial decision-support prototype for post-landslide road-network assessment. It combines raster landslide evidence with a vector road graph, identifies road segments exposed to predicted hazards, and returns a safety-oriented route through the remaining network.
 
----
+The included web application demonstrates the workflow for the Chimanimani, Zimbabwe study area following the March 2019 event.
 
-## 1. What this project does
+## Overview
 
-| Task | Imagery | Method | Key result |
-|---|---|---|---|
-| Road segmentation | Aeroscapes (drone) | U-Net ResNet34 | test IoU **0.939** |
-| Road segmentation | Sentinel-2 (satellite) | multi-spectral U-Net (RGB+NIR+NDVI+NIR-Red) + OSM weak supervision | held-out IoU **0.82** |
-| Road segmentation | DJI drone photo | Aeroscapes model | 8.3 % road coverage |
-| Raster+vector fusion | Sentinel-2 | alpha-overlay + **graph-attention (GRAFF)** + relaxation labeling | see results |
-| Risk-aware routing | OSM + road/landslide confidence | intersection-noded graph + cost-aware A* | `results/risk_aware_routing/` |
+Satellite-derived landslide probability alone does not describe which roads are affected or whether an alternative route remains available. DR-Carys links that raster evidence to individual road segments and their network topology:
 
-## 2. Folder structure
+1. A post-event raster is accepted as either a georeferenced landslide-probability GeoTIFF or a supported multi-temporal Sentinel-2 NetCDF scene.
+2. Hazard pixels above a conservative threshold are converted into polygons and buffered.
+3. The buffered hazard footprint is intersected with an intersection-aware road graph.
+4. Raster evidence and vector/topological attributes are fused by a weakly supervised GMU + GAT model.
+5. Exposed segments are withheld from the routing graph and a safe route is calculated where a connected alternative exists.
 
-This release includes the source code, application, and generated results only.
-Raw/derived datasets are deliberately not tracked; provide your own data under
-`dataset/` when reproducing the pipeline.
+## Repository contents
 
 ```
-FINAL/
-├── README.md
-├── code/            all source code
-│   ├── roadseg/                 segmentation package (UNet/DLinkNet/DeepLabV3+/SegFormer)
-│   ├── sentinel_seg/            multi-spectral Sentinel-2 pipeline
-│   ├── Raster/                  satellite download + super-resolution + vector rasterize
-│   ├── run.py                   Sentinel-2 end-to-end entrypoint
-│   ├── train_aeroscapes_road.py Aeroscapes training
-│   ├── roboflow_landslide_inference.py hosted SegFormer landslide inference
-│   ├── train_sentinel2_road.py  independently supervised Sentinel-2 road training
-│   ├── fuse_landslide_road_confidence.py per-road confidence fusion on MaxScenes
-│   ├── evaluate_road_confidence_proxy.py proxy evaluation against MaxScenes event area
-│   ├── graph_fusion.py          GRAFF: graph-attention raster-vector fusion
-│   ├── road_network_update.py   conservative vector-update candidate generation
-│   ├── drone_pipeline.py        DJI drone segmentation + vector fusion
-│   ├── leave_roads_out.py       honest non-circular evaluation
-│   └── spectral_analysis.py     spectral separability diagnostic
-├── dataset/
-│   ├── aeroscapes/              drone dataset (3269 images + masks + splits)
-│   ├── Drone/                   DJI_0275.JPG + get_location.py
-│   ├── Vector/                  OSM roads + buildings (Geofabrik)
-│   └── sentinel2_stac_downloads/ Sentinel-2 bands + SR + rasterized vectors
+DR-carys/
+├── app/drcarys-v3/                 Browser dashboard and runtime assets
+│   ├── dist/                       Static interface, map layers, demo scenes
+│   └── runtime/                    Locally generated upload/session outputs
+├── code/
+│   ├── drcarys_v3_server.py        Flask server and safety-routing workflow
+│   ├── build_weak_road_edge_dataset.py
+│   ├── train_weak_gmu_gat.py       GMU + GAT training implementation
+│   ├── fuse_landslide_road_confidence.py
+│   └── roadseg/                    Segmentation model utilities
 ├── results/
-│   ├── aerospace_segmentation/  Aeroscapes road model + predictions
-│   ├── sentinel_seg_outputs/    Sentinel-2 multispectral model + zoom in/out
-│   ├── graph_fusion/            GRAFF graph fusion outputs
-│   ├── drone_segmentation/      drone segmentation + comparison + zoom
-│   └── raster_vector_fusion/    organized fusion/segmentation/comparison/zoom
-└── docs/
-    ├── <paper>.pdf              the reference paper (DL + GCN + relaxation labeling)
-    └── MANIFEST.txt             complete file listing
+│   ├── chimanimani_full_post_event_coverage/
+│   ├── chimanimani_study_graph_v2_local_buffer_update/
+│   ├── sen12_temporal_chimanimani_finetuned/
+│   └── weak_gmu_gat_chimanimani/
+└── README.md
 ```
 
-## 3. Honest results (read this before trusting any number)
+Only source code, application assets, and generated results are versioned. Raw imagery, training labels, and other datasets are intentionally excluded. To reproduce model training, place the required inputs in a local `dataset/` directory; it is ignored by Git.
 
-* **Aeroscapes roads** — model trained *and tested* on drone imagery: **test IoU 0.94**
-  (strong, and a genuine match of training/testing domain).
-* **Sentinel-2 roads** — the model was trained on **OSM road labels** and scored
-  **IoU 0.90** against those same labels. A **leave-roads-out test** (train on 70 % of
-  road segments, test on the hidden 30 %) revealed the truth:
-  * recall on **known** roads = **0.84** (memorised)
-  * recall on **hidden** roads = **0.02** (approx random)
-  => the 0.90 was ~90 % **memorisation**, not detection. Real Sentinel-2 road
-  detection needs **many scenes** (multi-tile training), not one.
+## Included outputs
 
-## 4. How to reproduce
+The `results/` directory contains the published project artifacts, including:
+
+- Post-event landslide-probability mosaics for Chimanimani.
+- A noded road graph (`road_edges.geojson`, `road_nodes.geojson`, and `road_graph.graphml`).
+- Hazard-buffer, exposed-road, and routing-evaluation layers.
+- Temporal segmentation checkpoints and evaluation summaries.
+- The weak GMU + GAT checkpoint, training history, and validation visualizations.
+
+## Running the dashboard
+
+### Prerequisites
+
+- Python 3.11 or later
+- A Python environment with `flask`, `torch`, `numpy`, `geopandas`, `rasterio`, `shapely`, `pyproj`, `xarray`, and their geospatial dependencies
+
+Install the required packages in an environment appropriate for your platform. CUDA is optional; the included server loads the shipped checkpoints on CPU.
+
+### Start
+
+From the repository root:
 
 ```powershell
-# Aeroscapes road model
-python train_aeroscapes_road.py
-
-# Sentinel-2 multispectral pipeline (train + infer + fuse + evaluate)
-python run.py all
-
-# Zoom-in / zoom-out of the Sentinel-2 result
-python -m sentinel_seg.visualize
-
-# Graph-attention raster-vector fusion (GRAFF)
-python graph_fusion.py
-
-# Generate GIS change candidates: green=added, black=confirmed, amber=uncertain
-# (red removals are opt-in because the Sentinel model needs stronger validation)
-python road_network_update.py
-
-# DJI drone segmentation + vector fusion
-python drone_pipeline.py
-
-# Run the hosted Roboflow SegFormer landslide model. The key must be supplied
-# outside the project; never put it in source code or notebooks.
-$env:ROBOFLOW_API_KEY = "<your key>"
-python roboflow_landslide_inference.py
-
-# Fuse the hosted landslide probability with road evidence.
-python fuse_landslide_road_confidence.py
-
-# Compare the legacy locally trained Bijie model against Roboflow on a scene.
-python compare_landslide_models.py
-
-# Train the independent Sentinel-2 road model (RGB tiles + road masks)
-python train_sentinel2_road.py --epochs 30
-
-# Produce continuous per-road confidence scores for the Shirur MaxScenes post-event scene
-python fuse_landslide_road_confidence.py
-
-# Proxy comparison only: uses the broad event-area KMZ, not a landslide footprint
-python evaluate_road_confidence_proxy.py
-
-# Build a routable, intersection-aware graph.  It carries road/landslide
-# evidence to each edge and writes road_nodes.geojson, road_edges.geojson,
-# and road_graph.graphml under results/risk_aware_routing/.
-python code/routing/pipeline.py build
-
-# Risk-aware route. Coordinates must use the projected CRS of road_edges.geojson.
-python code/routing/pipeline.py route --start 348000,2012000 --end 351000,2015000
-
-# Optional learned refinement: first create labelled atomic road edges with a
-# risk_label column (0=safe, 1=dangerous), then train and route on its output.
-python code/routing/pipeline.py train --labelled-edges results/risk_aware_routing/road_edges_labelled.geojson
-python code/routing/pipeline.py route --edges results/risk_aware_routing/road_edges_gat.geojson --start 348000,2012000 --end 351000,2015000
-
-# Route output is the safest route plus a risk map. Compare deterministic and
-# GAT safest-route behaviour:
-python code/routing/pipeline.py evaluate --start 348000,2012000 --end 351000,2015000
-
-# No-data smoke test for graph topology, risk cost, and routing behavior.
-python code/routing/smoke_test.py
-
-# Demonstration-only GMU+GAT workflow using a broad event-area proxy. These are
-# not manual road-condition labels and must not be used for real accuracy claims.
-python code/routing/create_proxy_labels.py
-python code/routing/pipeline.py train --labelled-edges results/risk_aware_routing/road_edges_proxy_labelled.geojson
-
-# Honest (non-circular) evaluation
-python leave_roads_out.py
+python code/drcarys_v3_server.py
 ```
 
-## 5. Dependencies
+Then open `http://127.0.0.1:8766` in a browser.
 
-Python 3.11; `torch`, `torchvision`, `segmentation-models-pytorch`, `inference-sdk`, `rasterio`,
-`geopandas`, `shapely`, `networkx`, `opencv-python`, `numpy`, `matplotlib`,
-`scipy`. GPU (CUDA) recommended.
+The dashboard lets you select demonstration scenes or upload a georeferenced probability GeoTIFF (`.tif` / `.tiff`) or supported Sentinel-2 NetCDF scene (`.nc`). Uploaded GeoTIFF values must represent probabilities in the range 0–1 and use the same projected CRS as the study graph.
 
-## 6. Key design notes
+## Training the weak GMU + GAT model
 
-1. **Multi-spectral input is the fix for Sentinel-2.** Visible RGB alone has a
-   Fisher separability of ~0.05 for roads vs background; adding NIR and NDVI/NIR-Red
-   raises it to ~0.16 (see `spectral_analysis.py`).
-2. **Super-resolution** (10 m -> 5 m) is required: at 10 m roads are sub-pixel
-   (99.7 % of road pixels are boundary/mixed pixels).
-3. **GRAFF** (`graph_fusion.py`) fuses raster evidence onto the OSM road graph via a
-   from-scratch Graph Attention Network + Rosenfeld-Hummel-Zucker relaxation labeling,
-   then diffuses the refined confidence back onto the pixel grid.
-4. **Road-network update candidates** (`road_network_update.py`) converts raster-only
-   road evidence to centreline candidates, compares it against OSM, and exports a
-   GeoJSON change layer and a green/red/black/amber review map. By default weak evidence
-   is marked **uncertain**, not removed, because the Sentinel model is not sufficiently
-   validated for autonomous map edits.
-5. **Risk-aware routing** (`routing/`) splits vector roads at real intersections,
-   samples raster evidence per directed segment, and applies A* to a transparent
-   travel-time-plus-risk cost. `routing/gnn.py` supplies an optional GMU +
-   line-graph GAT refinement model, but it is only trainable when time-aligned,
-   road-segment safety labels are supplied; it does not make unsupported
-   operational closure decisions from the current proxy outputs.
+The project provides a reproducible weak-supervision workflow for research and demonstration:
+
+```powershell
+# Build road-edge features and weak exposure labels from local datasets.
+python code/build_weak_road_edge_dataset.py
+
+# Train the gated multimodal unit and graph-attention model.
+python code/train_weak_gmu_gat.py
+```
+
+The generated label is named `weak_exposed`: a road piece is positive when it intersects a buffer around a ground-truth landslide mask. It describes **hazard exposure**, not independently observed road damage.
+
+## Safety and interpretation
+
+This is a research prototype, not an operational road-closure system.
+
+- Predicted landslide footprints and road exposure are model outputs and require expert review.
+- A route returned by the application is a network-based safety recommendation under the available raster and road-graph evidence; it is not a guarantee of road accessibility.
+- The weakly supervised labels must not be reported as independently verified road-condition labels.
+- The workflow is intentionally conservative: potential hazard exposure is treated as a reason to avoid a segment during routing.
+
+## Citation
+
+If you use this repository, please cite it as:
+
+> *Structure-Aware Raster-Vector Integration for Post-Landslide Road-Network Assessment and Safety-Routing* (DR-Carys project).
+
+## License
+
+No license has been specified for this repository. Contact the project maintainers before redistributing or using the code and results outside the intended academic/research context.
