@@ -1,5 +1,7 @@
 # Structure-Aware Raster-Vector Fusion for Post-Landslide Road Assessment & Safety Routing
 
+
+
 A research prototype for assessing likely post-landslide road exposure and producing safety-only routes. The system combines temporal Sentinel-2 landslide evidence with an OpenStreetMap-derived road graph. Raster and vector evidence are fused at the road-segment level, then topology is used to identify segments that should be excluded from routing.
 
 ## What the system does
@@ -50,7 +52,7 @@ The decision process has six stages:
 │   ├── sen12_temporal_chimanimani_finetuned/
 │   ├── weak_gmu_gat_chimanimani/
 │   └── chimanimani_study_graph_v2_local_buffer_update/
-├── dataset/                              # Local only; ignored by Git
+├── data.md                              # dataset details ,study area
 └── README.md
 ```
 
@@ -155,11 +157,4 @@ The GMU-GAT metrics are evaluated against weak exposure labels. The held-out wea
 
 For 50 origin-destination pairs, 42 baseline routes used at least one danger edge. After safety exclusions, 10 safe routes remained available and 40 pairs correctly returned no safe route. No returned safe route used a marked danger edge. Where both routes existed, the mean detour was 1,224 m and the maximum detour was 9,963 m.
 
-## Limitations and responsible use
-
-- Landslide probabilities are not direct observations of road condition.
-- The road model is trained using a spatial exposure proxy, not independently labelled road closures.
-- Road geometry and attributes can be incomplete or outdated after an event.
-- Sentinel-2 resolution can mix roads, vegetation, bare ground, cloud shadow, and landslide pixels.
-- The 500 m buffer is a conservative modelling choice, not a universal damage radius.
 
